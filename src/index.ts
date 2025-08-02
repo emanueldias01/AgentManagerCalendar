@@ -10,23 +10,25 @@ async function main() {
     const agent = new Agent({
         name : "Calendário",
         model : "gpt-4o-mini",
-        instructions: "Informe sobre o calendário e faça operações encima do calendário, como criar eventos, buscar eventos, atualizar eventos e deletar eventos",
+        instructions: "Interprete a intenção do usuário e gere os dados para executar ferramentas como criar, buscar ou atualizar eventos.",
         tools: toolsKit,
     })
 
     const app = express();
     app.use(json());
     app.use(cors());
-    app.get('/mcp', async (req : Request, res : Response) => {
+    app.post('/mcp', async (req : Request, res : Response) => {
 
         const pergunta = req.body.pergunta;
-        const respostaAI = askAgent(agent, pergunta);
+        const respostaAI = await askAgent(agent, pergunta);
 
         res.status(200).json({ resposta : respostaAI });
     }
     )
     const PORT = process.env.PORT;
-    app.listen(PORT);
+    app.listen(PORT, () => {
+        console.log("port " + PORT);
+    });
 }
 
 main();

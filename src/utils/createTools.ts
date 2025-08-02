@@ -1,7 +1,9 @@
 import { tool, Tool } from "@openai/agents";
+import * as chrono from 'chrono-node';
 import { z } from 'zod';
 import EventService from "../services/EventService";
 import { calendar_v3 } from "googleapis";
+import { parseDataNatural } from "./parseTime";
 
 
 const createTools = async () : Promise<Tool[]>  => {
@@ -17,25 +19,26 @@ const createTools = async () : Promise<Tool[]>  => {
         },
     });
 
+
     const toolCreateEvent = tool({
     name: 'criar_evento',
     description: 'Cria um evento no Google Calendar',
     parameters: z.object({
         summary: z.string().describe('Título do evento'),
+        dataNatural: z.string().describe('Data e hora em linguagem natural, ex: "amanhã às 14h"'),
         description: z.string().optional().nullable().describe('Descrição do evento'),
         location: z.string().optional().nullable().describe('Local do evento'),
-        startDateTime: z.string().describe('Início no formato ISO ex: 2025-08-05T10:00:00-03:00'),
-        endDateTime: z.string().describe('Fim no formato ISO ex: 2025-08-05T11:00:00-03:00'),
         timeZone: z.string().optional().nullable().default('America/Sao_Paulo'),
     }),
     execute: async ({
         summary,
+        dataNatural,
         description,
         location,
-        startDateTime,
-        endDateTime,
         timeZone,
     }) => {
+        const { startDateTime, endDateTime } = parseDataNatural(dataNatural);
+
         const eventData = {
         summary,
         description: description ?? undefined,
@@ -64,8 +67,7 @@ const createTools = async () : Promise<Tool[]>  => {
         summary: z.string().optional().nullable().describe('Novo título do evento'),
         description: z.string().optional().nullable().describe('Nova descrição do evento'),
         location: z.string().optional().nullable().describe('Novo local do evento'),
-        startDateTime: z.string().optional().nullable().describe('Nova data/hora de início no formato ISO'),
-        endDateTime: z.string().optional().nullable().describe('Nova data/hora de término no formato ISO'),
+        dataNatural: z.string().optional().nullable().describe('Nova data e hora do evento em linguagem natural, ex: "próxima segunda às 10h"'),
         timeZone: z.string().optional().nullable().default('America/Sao_Paulo').describe('Fuso horário no formato IANA'),
     }),
     execute: async ({
@@ -73,8 +75,7 @@ const createTools = async () : Promise<Tool[]>  => {
         summary,
         description,
         location,
-        startDateTime,
-        endDateTime,
+        dataNatural,
         timeZone,
     }) => {
         const updatedData: calendar_v3.Schema$Event = {};
@@ -85,16 +86,19 @@ const createTools = async () : Promise<Tool[]>  => {
 
         const tz = timeZone ?? 'America/Sao_Paulo';
 
-        if (startDateTime != null) {
+        if (dataNatural != null) {
+        const dataInicio = chrono.pt.parseDate(dataNatural);
+        if (!dataInicio) throw new Error("Não foi possível interpretar a data/hora fornecida.");
+
+        const dataFim = new Date(dataInicio.getTime() + 60 * 60 * 1000); // +1 hora
+
         updatedData.start = {
-            dateTime: startDateTime,
+            dateTime: dataInicio.toISOString(),
             timeZone: tz,
         };
-        }
 
-        if (endDateTime != null) {
         updatedData.end = {
-            dateTime: endDateTime,
+            dateTime: dataFim.toISOString(),
             timeZone: tz,
         };
         }
@@ -103,6 +107,7 @@ const createTools = async () : Promise<Tool[]>  => {
         return result;
     },
     });
+
 
 
     const toolDeleteEvent = tool({

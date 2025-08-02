@@ -19,6 +19,7 @@
   "dependencies": {
     "@google-cloud/local-auth": "^2.1.0",
     "@openai/agents": "^0.0.14",
+    "chrono-node": "^2.8.3",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "googleapis": "^105.0.0"
