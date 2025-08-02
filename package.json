@@ -4,18 +4,23 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start:dev" : "tsx --env-file=.env ./src/index.ts"
+    "start:dev": "tsx --env-file=.env ./src/index.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
     "tsup": "^8.5.0",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "@google-cloud/local-auth": "^2.1.0",
     "@openai/agents": "^0.0.14",
-    "express": "^5.1.0"
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "googleapis": "^105.0.0"
   }
 }
