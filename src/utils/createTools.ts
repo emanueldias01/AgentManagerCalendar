@@ -1,9 +1,8 @@
 import { tool, Tool } from "@openai/agents";
-import * as chrono from 'chrono-node';
 import { z } from 'zod';
 import EventService from "../services/EventService";
 import { calendar_v3 } from "googleapis";
-import { parseDataNatural } from "./parseTime";
+import { DateTime } from "luxon";
 
 
 const createTools = async () : Promise<Tool[]>  => {
@@ -25,88 +24,91 @@ const createTools = async () : Promise<Tool[]>  => {
     description: 'Cria um evento no Google Calendar',
     parameters: z.object({
         summary: z.string().describe('Título do evento'),
-        dataNatural: z.string().describe('Data e hora em linguagem natural, ex: "amanhã às 14h"'),
+        startDateTime: z.string().describe('Data/hora ISO de início, ex: "2025-08-07T14:00:00-03:00"'),
+        endDateTime: z.string().optional().nullable().describe('Data/hora ISO de fim, opcional'),
         description: z.string().optional().nullable().describe('Descrição do evento'),
         location: z.string().optional().nullable().describe('Local do evento'),
         timeZone: z.string().optional().nullable().default('America/Sao_Paulo'),
     }),
     execute: async ({
         summary,
-        dataNatural,
+        startDateTime,
+        endDateTime,
         description,
         location,
         timeZone,
     }) => {
-        const { startDateTime, endDateTime } = parseDataNatural(dataNatural);
+        console.log("📅 Criando evento com início:", startDateTime);
 
-        const eventData = {
-        summary,
-        description: description ?? undefined,
-        location: location ?? undefined,
-        start: {
-            dateTime: startDateTime,
-            timeZone: timeZone ?? 'America/Sao_Paulo',
-        },
-        end: {
-            dateTime: endDateTime,
-            timeZone: timeZone ?? 'America/Sao_Paulo',
-        },
+        const startISO = startDateTime;
+        const endISO = endDateTime ?? DateTime.fromISO(startISO, { zone: timeZone ?? 'America/Sao_Paulo' }).plus({ hours: 1 }).toISO();
+
+        const eventData: calendar_v3.Schema$Event = {
+            summary,
+            description: description ?? undefined,
+            location: location ?? undefined,
+            start: {
+                dateTime: startISO,
+                timeZone: timeZone ?? 'America/Sao_Paulo',
+            },
+            end: {
+                dateTime: endISO,
+                timeZone: timeZone ?? 'America/Sao_Paulo',
+            },
         };
 
         const result = await EventService.createEvent(eventData);
+        console.log(eventData);
         return result;
     },
-    });
-
+});
 
     const toolUpdateEvent = tool({
-    name: 'atualizar_evento',
-    description: 'Atualiza um evento existente no Google Calendar pelo ID',
-    parameters: z.object({
-        eventId: z.string().describe('ID do evento a ser atualizado'),
-        summary: z.string().optional().nullable().describe('Novo título do evento'),
-        description: z.string().optional().nullable().describe('Nova descrição do evento'),
-        location: z.string().optional().nullable().describe('Novo local do evento'),
-        dataNatural: z.string().optional().nullable().describe('Nova data e hora do evento em linguagem natural, ex: "próxima segunda às 10h"'),
-        timeZone: z.string().optional().nullable().default('America/Sao_Paulo').describe('Fuso horário no formato IANA'),
-    }),
-    execute: async ({
-        eventId,
-        summary,
-        description,
-        location,
-        dataNatural,
-        timeZone,
-    }) => {
-        const updatedData: calendar_v3.Schema$Event = {};
+        name: 'atualizar_evento',
+        description: 'Atualiza um evento existente no Google Calendar pelo ID',
+        parameters: z.object({
+            eventId: z.string().describe('ID do evento a ser atualizado'),
+            summary: z.string().optional().nullable().describe('Novo título do evento'),
+            description: z.string().optional().nullable().describe('Nova descrição do evento'),
+            location: z.string().optional().nullable().describe('Novo local do evento'),
+            startDateTime: z.string().optional().nullable().describe('Nova data/hora ISO de início'),
+            endDateTime: z.string().optional().nullable().describe('Nova data/hora ISO de fim'),
+            timeZone: z.string().optional().nullable().default('America/Sao_Paulo').describe('Fuso horário no formato IANA'),
+        }),
+        execute: async ({
+            eventId,
+            summary,
+            description,
+            location,
+            startDateTime,
+            endDateTime,
+            timeZone,
+        }) => {
+            const updatedData: calendar_v3.Schema$Event = {};
 
-        if (summary != null) updatedData.summary = summary;
-        if (description != null) updatedData.description = description;
-        if (location != null) updatedData.location = location;
+            if (summary != null) updatedData.summary = summary;
+            if (description != null) updatedData.description = description;
+            if (location != null) updatedData.location = location;
 
-        const tz = timeZone ?? 'America/Sao_Paulo';
+            const tz = timeZone ?? 'America/Sao_Paulo';
 
-        if (dataNatural != null) {
-        const dataInicio = chrono.pt.parseDate(dataNatural);
-        if (!dataInicio) throw new Error("Não foi possível interpretar a data/hora fornecida.");
+            if (startDateTime != null) {
+                updatedData.start = {
+                    dateTime: startDateTime,
+                    timeZone: tz,
+                };
 
-        const dataFim = new Date(dataInicio.getTime() + 60 * 60 * 1000); // +1 hora
+                updatedData.end = {
+                    dateTime: endDateTime ?? DateTime.fromISO(startDateTime, { zone: tz }).plus({ hours: 1 }).toISO(),
+                    timeZone: tz,
+                };
+            }
 
-        updatedData.start = {
-            dateTime: dataInicio.toISOString(),
-            timeZone: tz,
-        };
-
-        updatedData.end = {
-            dateTime: dataFim.toISOString(),
-            timeZone: tz,
-        };
-        }
-
-        const result = await EventService.updateEvent(eventId, updatedData);
-        return result;
-    },
+            const result = await EventService.updateEvent(eventId, updatedData);
+            return result;
+        },
     });
+
 
 
 
