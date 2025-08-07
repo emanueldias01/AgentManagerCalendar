@@ -100,7 +100,11 @@ async function main() {
     app.post('/mcp', async (req : Request, res : Response) => {
 
         const pergunta = req.body.pergunta;
+        console.log("PERGUNTA:")
+        console.log(pergunta + "\n\n");
         const respostaAI = await askAgent(agent, pergunta);
+        console.log("RESPOSTA:");
+        console.log(respostaAI + "\n\n");
 
         res.status(200).json({ resposta : respostaAI });
     }

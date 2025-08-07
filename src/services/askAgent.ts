@@ -3,6 +3,11 @@ import { Agent, run } from "@openai/agents"
 const askAgent = async (agent : Agent, prompt : string) => {
     const agora = new Date();
 
+    const diaSemana = agora.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        timeZone: 'America/Sao_Paulo',
+    });
+
     const dataAtual = agora.toLocaleDateString('pt-BR', {
         day: '2-digit',
         month: '2-digit',
@@ -19,7 +24,7 @@ const askAgent = async (agent : Agent, prompt : string) => {
 
     const response = await run(
         agent,
-        `${prompt}. Tenha noção da data e horário atual: ${dataAtual} ${horaAtual}.`
+        `${prompt}. Tenha noção da data e horário atual: ${diaSemana}, ${dataAtual} ${horaAtual}.`
     );
 
     return response.finalOutput;
