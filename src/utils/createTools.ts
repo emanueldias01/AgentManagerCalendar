@@ -112,22 +112,22 @@ const createTools = async () : Promise<Tool[]>  => {
 
 
 
-    const toolDeleteEvent = tool({
-    name: 'deletar_evento',
-    description: 'Remove um evento do Google Calendar pelo ID',
-    parameters: z.object({
-        eventId: z.string().describe('ID do evento que será removido'),
-    }),
-    execute: async ({ eventId }) => {
-        const result = await EventService.deleteEvent(eventId);
-        return result;
-    },
-    });
+    // const toolDeleteEvent = tool({
+    // name: 'deletar_evento',
+    // description: 'Remove um evento do Google Calendar pelo ID',
+    // parameters: z.object({
+    //     eventId: z.string().describe('ID do evento que será removido'),
+    // }),
+    // execute: async ({ eventId }) => {
+    //     const result = await EventService.deleteEvent(eventId);
+    //     return result;
+    // },
+    // });
 
     tools.push(toolGetEvents);
     tools.push(toolCreateEvent);
     tools.push(toolUpdateEvent);
-    tools.push(toolDeleteEvent);
+    // tools.push(toolDeleteEvent);
 
     return tools;
 }

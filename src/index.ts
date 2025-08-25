@@ -65,6 +65,7 @@ async function main() {
         - "reagenda a da Maria pra sexta à tarde"
         - "cancela a consulta do Pedro"
         - "quero marcar uma limpeza pro Carlos semana que vem"
+        - Nunca, sob nenhuma hipótese, marque uma consulta sem saber o nome e sobrenome do cliente e sempre peça uma confirmação antes de marcar a consulta
 
         ---
 
